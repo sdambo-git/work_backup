@@ -1,0 +1,127 @@
+FROM nvcr.io/nvidia/cuda:12.4.1-devel-ubi9
+
+# Copy the rhsm-register script to enable subscription-manager during build time
+# COPY --chmod=744 ./rhsm-register /usr/local/bin/rhsm-register
+
+# RUN --mount=type=secret,id=RHSM_ORG,target=/run/secrets/RHSM_ORG \
+#     --mount=type=secret,id=RHSM_ACTIVATIONKEY,target=/run/secrets/RHSM_ACTIVATIONKEY \ 
+#     bash -c "ls -l /run/secret"    
+#  &&  rm /etc/rhsm-host \
+#  && /usr/local/bin/rhsm-register 
+
+WORKDIR /
+
+RUN dnf install -y boost-devel cmake make git && dnf clean all && rm -rf /var/cache/yum
+RUN git clone --single-branch --branch=v12.4.1 --depth=1 https://github.com/NVIDIA/cuda-samples.git
+RUN cd cuda-samples && make TARGET_ARCH=x86_64
+
+ENV PATH="${PATH}:/cuda-samples/bin/${NVARCH}/linux/release"
+
+RUN git clone --single-branch --branch=master --depth=1 https://github.com/NVIDIA/nccl-tests.git
+RUN cd nccl-tests && make
+
+ENV PATH="${PATH}:/nccl-tests/build"
+
+RUN git clone --single-branch --branch=main --depth=1 https://github.com/NVIDIA/nvbandwidth.git
+RUN cd nvbandwidth && cmake . && make && chmod +x nvbandwidth && cp nvbandwidth /usr/bin/nvbandwidth 
+
+# RUN dnf clean all \ 
+# && subscription-manager unregister
+ 
+#Set work directory
+WORKDIR /root
+RUN mkdir /root/rpms
+COPY ./rpms/*.rpm /root/rpms/
+      
+#DNF install packages either from repo or locally
+RUN dnf install `ls -1 /root/rpms/*.rpm` -y
+RUN dnf install yum wget procps-ng pciutils jq iputils kmod systemd-udev rpm-build ethtool net-tools git autoconf automake libtool -y
+      
+# env  CUDA library paths
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+ENV LIBRARY_PATH="/usr/local/cuda/lib64:$LIBRARY_PATH"
+
+# Git clone perftest repository
+RUN git clone --single-branch --branch=master --depth=1 https://github.com/linux-rdma/perftest.git
+
+# Change into perftest directory &  Build perftest with the cuda libraries included
+RUN cd /root/perftest && ./autogen.sh && ./configure CUDA_H_PATH=/usr/local/cuda/include/cuda.h \
+    && make -j && make install
+
+# Sleep container indefinitly
+# CMD ["sleep", "infinity"]
+
+# Set work directory
+WORKDIR /root/mft  
+
+RUN dnf install /root/rpms/usbutils*.rpm -y  
+
+# Cleanup
+WORKDIR /root
+RUN dnf clean all
+
+# Set tool versions 
+ENV MLNXTOOLVER="23.07-1.el9"
+ENV MFTTOOLVER="4.30.0-139"
+ENV MLXUPVER="4.30.0"
+
+# Use the built-in TARGETARCH argument
+ARG TARGETARCH
+ENV ARCH=$TARGETARCH
+
+RUN echo "Architecture is $ARCH"
+
+# Pull mlnx-tools from EPEL
+RUN if [ "$ARCH" = "amd64" ]; then \
+      export ARCH="x86_64" && \
+      wget https://dl.fedoraproject.org/pub/epel/9/Everything/$ARCH/Packages/m/mlnx-tools-$MLNXTOOLVER.noarch.rpm; \
+    fi  
+     
+# Arm architecture fixup for mft-tools
+RUN if [ "$ARCH" = "aarch64" ]; then \
+      export ARCH="aarch64" && \
+      wget https://www.mellanox.com/downloads/MFT/mft-$MFTTOOLVER-$ARCH-rpm.tgz; \
+    fi           
+
+# Pull mft-tools
+RUN export ARCH="x86_64" && \
+    wget https://www.mellanox.com/downloads/MFT/mft-$MFTTOOLVER-$ARCH-rpm.tgz
+
+# Install mlnx-tools into container
+RUN  dnf install mlnx-tools-$MLNXTOOLVER.noarch.rpm -y
+
+# Copy kernel devel rpm`s
+RUN mkdir -p /root/mft/rpms
+COPY ./rpms/kernel*.rpm /root/mft/rpms
+
+# Install kernel-devel package supplied in container
+COPY ./kernel_version_rpm.py /root
+RUN python3 ./kernel_version_rpm.py  
+RUN mkdir -p /lib/modules/$(uname -r) && \  
+    ln -s /usr/src/kernels/$(uname -r) /lib/modules/$(uname -r)/build
+
+# Install mft-tools into container  
+ENV ARCH="x86_64"
+RUN tar -xzf mft-$MFTTOOLVER-$ARCH-rpm.tgz && \
+    cd /root/mft-$MFTTOOLVER-$ARCH-rpm && \ 
+    ./install.sh 
+
+# Change back to root workdir
+WORKDIR /root
+
+# x86 fixup for mlxup binary
+RUN echo $ARCH
+RUN if [ "$ARCH" == "x86_64" ]; then export ARCH="x64"; fi && \
+    wget https://www.mellanox.com/downloads/firmware/mlxup/$MLXUPVER/SFX/linux_$ARCH/mlxup && \
+    mv mlxup /usr/local/bin && \
+    chmod +x /usr/local/bin/mlxup
+
+# Sleep container indefinitly
+CMD ["sleep", "infinity"]
+
+
+# Run container entrypoint
+# COPY entrypoint.sh /root/entrypoint.sh
+# RUN chmod +x /root/entrypoint.sh
+
+# ENTRYPOINT ["/root/entrypoint.sh"]

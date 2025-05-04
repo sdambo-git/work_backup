@@ -1,0 +1,80 @@
+apiVersion: mellanox.com/v1alpha1
+kind: NicClusterPolicy
+metadata:
+  name: nic-cluster-policy
+spec:
+  nicFeatureDiscovery:
+    image: nic-feature-discovery
+    repository: ghcr.io/mellanox
+    version: {{ .spec.nicFeatureDiscovery.version }}
+  docaTelemetryService:
+    image: doca_telemetry
+    repository: nvcr.io/nvidia/doca
+    version: {{ .spec.docaTelemetryService.version }}
+  rdmaSharedDevicePlugin:
+    config: |
+      {
+        "configList": [
+          {
+            "resourceName": "rdma_shared_device_ib",
+            "rdmaHcaMax": 63,
+            "selectors": {
+              "ifNames": ["(?<ibIfNames>.*)"]
+            }
+          },
+          {
+            "resourceName": "rdma_shared_device_eth",
+            "rdmaHcaMax": 63,
+            "selectors": {
+              "ifNames": ["(?<ethIfNames>.*)"]
+            }
+          }
+        ]
+      }
+    image: k8s-rdma-shared-dev-plugin
+    repository: ghcr.io/mellanox
+    version: {{ .spec.rdmaSharedDevicePlugin.version }}
+  secondaryNetwork:
+    ipoib:
+      image: ipoib-cni
+      repository: ghcr.io/mellanox
+      version: {{ .spec.secondaryNetwork.ipoib.version }}
+  nvIpam:
+    enableWebhook: false
+    image: nvidia-k8s-ipam
+    repository: ghcr.io/mellanox
+    version: {{ .spec.nvIpam.version }}
+  ofedDriver:
+    readinessProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 30
+    forcePrecompiled: false
+    terminationGracePeriodSeconds: 300
+    livenessProbe:
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    upgradePolicy:
+      autoUpgrade: true
+      drain:
+        deleteEmptyDir: true
+        enable: true
+        force: true
+        timeoutSeconds: 300
+        podSelector: ''
+      maxParallelUpgrades: 1
+      safeLoad: false
+      waitForCompletion:
+        timeoutSeconds: 0
+    startupProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 20
+    image: doca-driver
+    repository: nvcr.io/nvidia/mellanox
+    version: {{ .spec.ofedDriver.version }}
+    env:
+    - name: UNLOAD_STORAGE_MODULES
+      value: "true"
+    - name: RESTORE_DRIVER_ON_POD_TERMINATION
+      value: "true"
+    - name: CREATE_IFNAMES_UDEV
+      value: "true"

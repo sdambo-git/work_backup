@@ -1,0 +1,28 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: {{ if .metadata }}{{ .metadata.name }}{{ else }}sriov-legacy-policy{{ end }}
+  namespace: openshift-sriov-network-operator
+spec:
+  deviceType: {{ if and .spec (hasKey .spec "deviceType") }}{{ .spec.deviceType }}{{ else }}netdevice{{ end }}
+  mtu: {{ if and .spec (hasKey .spec "mtu") }}{{ .spec.mtu }}{{ else }}1500{{ end }}
+  nicSelector:
+    vendor: {{ if and .spec .spec.nicSelector (hasKey .spec.nicSelector "vendor") }}{{ .spec.nicSelector.vendor }}{{ else }}15b3{{ end }}
+    pfNames: 
+    {{- if and .spec .spec.nicSelector .spec.nicSelector.pfNames }}
+    {{ .spec.nicSelector.pfNames | toYaml | nindent 4 }}
+    {{- else }}
+    - (?<pfName>[\w.]+#\d+-\d+)
+    {{- end }}
+  nodeSelector:
+    {{- if and .spec .spec.nodeSelector }}
+    {{- range $key, $value := .spec.nodeSelector }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+    {{- else }}
+    feature.node.kubernetes.io/pci-15b3.present: "true"
+    {{- end }}
+  numVfs: {{ if and .spec (hasKey .spec "numVfs") }}{{ .spec.numVfs }}{{ else }}(?<numVfs>\d+){{ end }}
+  priority: {{ if and .spec (hasKey .spec "priority") }}{{ .spec.priority }}{{ else }}(?<priority>\d+){{ end }}
+  isRdma: {{ if and .spec (hasKey .spec "isRdma") }}{{ .spec.isRdma }}{{ else }}true{{ end }}
+  resourceName: {{ if and .spec (hasKey .spec "resourceName") }}{{ .spec.resourceName }}{{ else }}(?<resourceName>[\w-]+){{ end }}

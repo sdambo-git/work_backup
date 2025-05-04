@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .metadata.name }}
+  namespace: openshift-nfd
+spec:
+  targetNamespaces:  
+    - openshift-nfd
+{{- if .spec.upgradeStrategy }}
+  upgradeStrategy: Default
+{{- end }}

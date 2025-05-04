@@ -1,0 +1,58 @@
+apiVersion: nfd.openshift.io/v1
+kind: NodeFeatureDiscovery
+metadata:
+  name: {{ .metadata.name }}
+  namespace: openshift-nfd
+spec:
+  {{- if .spec }}
+  instance: ''
+  operand:
+    {{- if .spec.operand }}
+    servicePort: {{ .spec.operand.servicePort }}
+    {{- else }}
+    servicePort: 12000
+    {{- end }}
+    {{- if .spec.prunerOnDelete }}
+  prunerOnDelete: false
+    {{- end }} 
+  topologyUpdater: {{ .spec.topologyUpdater }}
+  workerConfig:
+    {{- if .spec.workerConfig }}
+    configData: |
+{{ .spec.workerConfig.configData | indent 6 }}
+    {{- else }}
+    configData: |
+      core:
+        sleepInterval: 60s
+      sources:
+        pci:
+          deviceClassWhitelist:
+            - "02"
+            - "03"
+            - "0200"
+            - "0207"
+            - "12"
+          deviceLabelFields:
+            - "vendor"
+    {{- end }}
+  {{- else }}
+  instance: ""
+  operand:
+    servicePort: 12000
+  prunerOnDelete: false
+  topologyUpdater: false
+  workerConfig:
+    configData: |
+      core:
+        sleepInterval: 60s
+      sources:
+        pci:
+          deviceClassWhitelist:
+            - "02"
+            - "03"
+            - "0200"
+            - "0207"
+            - "12"
+          deviceLabelFields:
+            - "vendor"
+  {{- end }}

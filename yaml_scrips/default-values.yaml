@@ -1,0 +1,89 @@
+# Default values for the Autopilot DaemonSet.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+image:
+  repository: quay.io/autopilot/autopilot
+  pullPolicy: Always
+
+# Bandwidth threshold below which PCIe links are considered broken (Gb/s)
+PCIeBW: 4
+
+# Timer for periodic checks, in hours
+repeat: 1
+
+# Timer for periodic invasive checks, in hours (e.g., dcgmi diag -r 3). Set to 0 to disable (for non nvidia gpu systems)
+invasive: 4
+
+# Image pull secret if the image is in a private repository
+pullSecrets:
+  create: false
+  name: autopilot-pull-secret
+  imagePullSecretData: 
+  
+env:
+# List of periodic checks to be executed every `repeat` hours.
+# If not running on GPU nodes, pciebw,remapped,dcgm and gpupower can be removed
+  - name: "PERIODIC_CHECKS"
+    value: "pciebw,remapped,dcgm,ping,gpupower"
+# Storage class name to test
+  - name: "PVC_TEST_STORAGE_CLASS"
+    value: "fast-ssd"
+# List of GPU errors considered fatal, as a result of a dcgmi run. This is used to label nodes with extra WARN/EVICT labels. The list defaults to [PCIe,NVLink,ECC,GPU Memory] and refers to https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/feature-overview.html#id3
+  - name: "DCGM_FATAL_ERRORS"
+    value: ""
+# Invasive jobs (e.g., dcgm level 3), are executed as separate job. The job deletes itself by default after 30s. This parameter can be customized by the env variable below
+  - name: "INVASIVE_JOB_TTLSEC"
+    value: ""
+
+service:
+  port: 3333
+
+annotations:
+  k8s.v1.cni.cncf.io/networks: rdmashared-net
+
+nodeSelector:
+  # nvidia.com/gpu.present: 'true'
+  # nvidia.com/mig.config: 'all-disabled'
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+            - nvd-srv-33.nvidia.eng.rdu2.dc.redhat.com
+            - nvd-srv-32.nvidia.eng.rdu2.dc.redhat.com
+
+# Running on GPU nodes only, will:
+# 1) add the `nvidia.com/gpu.present: 'true'` label and 
+# 2) enable the init container, which checks on the nvidia device plug-in to be setup
+onlyOnGPUNodes: true
+
+resources: 
+  # We advice to not set cpu and memory limits. DCGM requires several GB of memory to run and it may OOMKill the pod
+  limits:
+    nvidia.com/gpu: 1
+  requests:
+    nvidia.com/gpu: 1
+
+# klog configuration
+loglevel: 2
+logfile: "/data/report.log"
+
+# optional remote storage. A PVC and secret must exist
+additionalVolumeClaimTemplates:
+    - name: logdir
+      persistentVolumeClaim:
+        claimName: autopilot-logs
+  # - name: autopilot-tls-secret
+  #   secret:
+  #     secretName: autopilot-webhook
+additionalVolumeMounts:
+  # - name: autopilot-tls-secret
+  #   mountPath: "/etc/autopilot-tls-secret/tls"
+  #   readOnly: true
+    - mountPath: /data
+      name: logdir
+

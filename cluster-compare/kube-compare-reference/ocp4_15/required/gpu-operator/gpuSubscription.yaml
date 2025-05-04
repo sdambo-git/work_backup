@@ -1,0 +1,15 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .metadata.name }}
+  namespace: nvidia-gpu-operator
+  {{- if .metadata.labels }}
+  labels:
+    operators.coreos.com/gpu-operator-certified.nvidia-gpu-operator: ""
+  {{- end }}
+spec:
+  channel: {{ .spec.channel }} 
+  name: gpu-operator-certified
+  source: {{ .spec.source }}
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Automatic

@@ -1,0 +1,23 @@
+apiVersion: mellanox.com/v1alpha1
+kind: NicClusterPolicy
+metadata:
+  name: {{ .metadata.name }}
+spec:
+  ofedDriver:
+    image: {{ .spec.ofedDriver.image }}
+    repository: {{ .spec.ofedDriver.repository }}
+    version: {{ .spec.ofedDriver.version }}
+    startupProbe:
+      initialDelaySeconds: {{ .spec.ofedDriver.startupProbe.initialDelaySeconds }}
+      periodSeconds: {{ .spec.ofedDriver.startupProbe.periodSeconds }}
+    livenessProbe:
+      initialDelaySeconds: {{ .spec.ofedDriver.livenessProbe.initialDelaySeconds }}
+      periodSeconds: {{ .spec.ofedDriver.livenessProbe.periodSeconds }}
+    readinessProbe:
+      initialDelaySeconds: {{ .spec.ofedDriver.readinessProbe.initialDelaySeconds }}
+      periodSeconds: {{ .spec.ofedDriver.readinessProbe.periodSeconds }}
+    env:
+    {{- range .spec.ofedDriver.env }}
+    - name: {{ .name }}
+      value: {{ .value }}
+    {{- end }}

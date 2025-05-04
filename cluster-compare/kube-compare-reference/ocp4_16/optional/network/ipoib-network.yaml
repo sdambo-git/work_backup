@@ -1,0 +1,15 @@
+apiVersion: mellanox.com/v1alpha1
+kind: IPoIBNetwork
+metadata:
+  name: {{ .metadata.name }}
+  {{- if .metadata.annotations }}
+  annotations:
+    operator.ipoibnetwork.mellanox.com/last-network-namespace: {{ index .metadata.annotations "operator.ipoibnetwork.mellanox.com/last-network-namespace" }}
+  {{- end }}
+spec:
+  {{- with .spec }}
+  ipam: |
+    {{- .ipam | nindent 4 }}
+  master: {{ .master }}
+  networkNamespace: {{ .networkNamespace }}
+  {{- end }}

@@ -1,0 +1,108 @@
+apiVersion: nvidia.com/v1
+kind: ClusterPolicy
+metadata:
+  name: gpu-cluster-policy
+spec:
+  vgpuDeviceManager:
+    config:
+      default: default
+    enabled: {{ .spec.vgpuDeviceManager.enabled | default true }}
+  migManager:
+    config:
+      default: all-disabled
+      name: default-mig-parted-config
+    enabled: {{ .spec.migManager.enabled | default true }}
+  operator:
+    defaultRuntime: {{ .spec.operator.defaultRuntime | default "crio" }}
+    initContainer: {}
+    runtimeClass: {{ .spec.operator.runtimeClass | default "nvidia" }}
+    use_ocp_driver_toolkit: {{ .spec.operator.use_ocp_driver_toolkit | default true }}
+  dcgm:
+    enabled: {{ .spec.dcgm.enabled | default true }}
+  gfd:
+    enabled: {{ .spec.gfd.enabled }}
+  dcgmExporter:
+    config:
+      name: ""
+    serviceMonitor:
+      enabled: {{ .spec.dcgmExporter.serviceMonitor.enabled | default true }}
+    enabled: {{ .spec.dcgmExporter.enabled | default true }}
+  cdi:
+    default: {{ .spec.cdi.default | default false }}
+    enabled: {{ .spec.cdi.enabled | default false }}
+  driver:
+    licensingConfig:
+      nlsEnabled: {{ .spec.driver.licensingConfig.nlsEnabled | default true }}
+      configMapName: ""
+    certConfig:
+      name: ""
+    rdma:
+      enabled: {{ .spec.driver.rdma.enabled | default true }}
+    kernelModuleConfig:
+      name: ""
+    upgradePolicy:
+      autoUpgrade: {{ .spec.driver.upgradePolicy.autoUpgrade | default true }}
+      drain:
+        deleteEmptyDir: {{ .spec.driver.upgradePolicy.drain.deleteEmptyDir | default false }}
+        enable: {{ .spec.driver.upgradePolicy.drain.enable | default false }}
+        force: {{ .spec.driver.upgradePolicy.drain.force | default false }}
+        timeoutSeconds: {{ .spec.driver.upgradePolicy.drain.timeoutSeconds | default 300 }}
+      maxParallelUpgrades: {{ .spec.driver.upgradePolicy.maxParallelUpgrades | default 1 }}
+      maxUnavailable: {{ .spec.driver.upgradePolicy.maxUnavailable | default "25%" }}
+      podDeletion:
+        deleteEmptyDir: {{ .spec.driver.upgradePolicy.podDeletion.deleteEmptyDir | default false }}
+        force: {{ .spec.driver.upgradePolicy.podDeletion.force | default false }}
+        timeoutSeconds: {{ .spec.driver.upgradePolicy.podDeletion.timeoutSeconds | default 300 }}
+      waitForCompletion:
+        timeoutSeconds: {{ .spec.driver.upgradePolicy.waitForCompletion.timeoutSeconds | default 0 }}
+    repoConfig:
+      configMapName: ""
+    virtualTopology:
+      config: ""
+    enabled: {{ .spec.driver.enabled | default true }}
+    useNvidiaDriverCRD: {{ .spec.driver.useNvidiaDriverCRD | default false }}
+    useOpenKernelModules: {{ .spec.driver.useOpenKernelModules | default true }}
+  devicePlugin:
+    config:
+      name: ""
+      default: ""
+    mps:
+      root: {{ .spec.devicePlugin.mps.root | default "/run/nvidia/mps" }}
+    enabled: {{ .spec.devicePlugin.enabled | default true }}
+  gdrcopy:
+    enabled: {{ .spec.gdrcopy.enabled | default true }}
+  kataManager:
+    config:
+      artifactsDir: {{ .spec.kataManager.config.artifactsDir | default "/opt/nvidia-gpu-operator/artifacts/runtimeclasses" }}
+  mig:
+    strategy: single
+  sandboxDevicePlugin:
+    enabled: {{ .spec.sandboxDevicePlugin.enabled | default true }}
+  validator:
+    plugin:
+      env:
+        - name: WITH_WORKLOAD
+          value: "false"
+  nodeStatusExporter:
+    enabled: {{ .spec.nodeStatusExporter.enabled | default true }}
+  daemonsets:
+    rollingUpdate:
+      maxUnavailable: "1"
+    updateStrategy: {{ .spec.daemonsets.updateStrategy | default "RollingUpdate" }}
+  sandboxWorkloads:
+    defaultWorkload: {{ .spec.sandboxWorkloads.defaultWorkload | default "container" }}
+    enabled: {{ .spec.sandboxWorkloads.enabled | default false }}
+  gds:
+    enabled: {{ .spec.gds.enabled }}
+  {{- if .spec.gds.enabled }}
+    image: {{ .spec.gds.image }}
+    version: {{ .spec.gds.version }}
+    repository: {{ .spec.gds.repository }}
+  {{- end }}
+  vgpuManager:
+    enabled: {{ .spec.vgpuManager.enabled | default false }}
+  vfioManager:
+    enabled: {{ .spec.vfioManager.enabled | default true }}
+  toolkit:
+    installDir: {{ .spec.toolkit.installDir | default "/usr/local/nvidia" }}
+    enabled: {{ .spec.toolkit.enabled | default true }}

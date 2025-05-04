@@ -1,0 +1,35 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: {{ if .metadata }}{{ .metadata.name }}{{ else }}sriov-network{{ end }}
+  namespace: openshift-sriov-network-operator
+spec:
+  {{- if and .spec (hasKey .spec "vlan") }}
+  vlan: {{ .spec.vlan }}
+  {{- else }}
+  vlan: 0
+  {{- end }}
+  {{- if and .spec (hasKey .spec "networkNamespace") }}
+  networkNamespace: {{ .spec.networkNamespace }}
+  {{- else }}
+  networkNamespace: "default"
+  {{- end }}
+  {{- if and .spec (hasKey .spec "resourceName") }}
+  resourceName: {{ .spec.resourceName }}
+  {{- else }}
+  resourceName: "sriovlegacy"
+  {{- end }}
+  {{- if and .spec .spec.ipam }}
+  ipam: |
+{{ .spec.ipam | indent 4 }}
+  {{- else }}
+  ipam: |
+    {
+      "type": "whereabouts",
+      "range": "(?<iprange>192\.168\.\d+\.\d+\/\d+)",
+      "exclude": [
+       "(?<excludeRange1>192\.168\.\d+\.\d+\/\d+)",
+       "(?<excludeRange2>192\.168\.\d+\.\d+\/\d+)"
+      ]
+    }
+  {{- end }}

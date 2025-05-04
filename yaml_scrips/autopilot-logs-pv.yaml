@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: autopilot-logs-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: fast-ssd
+  local:
+    path: /mnt  # Path on the node where data will be stored
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nvd-srv-32.nvidia.eng.rdu2.dc.redhat.com  
+          - nvd-srv-33.nvidia.eng.rdu2.dc.redhat.com

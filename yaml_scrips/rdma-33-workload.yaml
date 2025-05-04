@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rdma-eth-33-workload
+  namespace: default
+  annotations:
+    k8s.v1.cni.cncf.io/networks: rdmashared-net
+spec:
+  nodeSelector: 
+    kubernetes.io/hostname: nvd-srv-33.nvidia.eng.rdu2.dc.redhat.com
+  serviceAccountName: rdma
+  containers:
+  - image: image-registry.openshift-image-registry.svc:5000/default/cuda-tools-build:latest
+    name: rdma-33-workload
+    securityContext:
+      privileged: true
+      capabilities:
+        add: [ "IPC_LOCK" ]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        rdma/rdma_shared_device_eth: 1
+      requests:
+        nvidia.com/gpu: 1
+        rdma/rdma_shared_device_eth: 1

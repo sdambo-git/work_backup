@@ -1,0 +1,11 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+  namespace: autopilot
+provisioner: csi.openshift.io
+parameters:
+  type: ssd
+  csi.storage.k8s.io/fstype: ext4
+reclaimPolicy: Delete
+volumeBindingMode: Immediate

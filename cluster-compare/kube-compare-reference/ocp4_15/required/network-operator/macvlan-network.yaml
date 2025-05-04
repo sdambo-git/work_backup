@@ -1,0 +1,10 @@
+apiVersion: mellanox.com/v1alpha1
+kind: MacvlanNetwork
+metadata:
+  name: {{ .metadata.name }}
+spec:
+  networkNamespace: {{ .spec.networkNamespace }}
+  master: {{ .spec.master }}
+  mode: bridge
+  mtu: 1500
+  ipam: '{"type": "whereabouts", "range": "(?<iprange>[0-9./]+)", "gateway": "(?<gateway>[0-9.]+)"}'
