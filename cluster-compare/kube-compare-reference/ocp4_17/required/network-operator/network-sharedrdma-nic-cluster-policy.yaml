@@ -15,20 +15,42 @@ spec:
     config: |
       {
         "configList": [
+          {{- $hasIB := false }}
+          {{- $hasETH := false }}
+          {{- $first := true }}
+          
+          {{- /* Check if we can find IB interfaces in the data */ -}}
+          {{- if and .spec.rdmaSharedDevicePlugin.config }}
+            {{- $configData := .spec.rdmaSharedDevicePlugin.config }}
+            {{- if contains $configData "ibs" }}
+              {{- $hasIB = true }}
+            {{- end }}
+            {{- if or (contains $configData "ens") (contains $configData "enp") (contains $configData "eth") }}
+              {{- $hasETH = true }}
+            {{- end }}
+          {{- end }}
+          
+          {{- if $hasIB }}
           {
             "resourceName": "rdma_shared_device_ib",
             "rdmaHcaMax": 63,
             "selectors": {
               "ifNames": ["(?<ibIfNames>.*)"]
             }
-          },
+          }
+          {{- $first = false }}
+          {{- end }}
+          
+          {{- if and $hasETH (not $first) }},{{- end }}
+          {{- if or $hasETH (not $hasIB) }}
           {
             "resourceName": "rdma_shared_device_eth",
-            "rdmaHcaMax": 63,
+            "rdmaHcaMax": {{ if and .spec.rdmaSharedDevicePlugin.config (contains .spec.rdmaSharedDevicePlugin.config "rdmaHcaMax") }}{{ regexFind "\"rdmaHcaMax\": ([0-9]+)" .spec.rdmaSharedDevicePlugin.config | regexReplaceAll "\"rdmaHcaMax\": " "" }}{{ else }}63{{ end }},
             "selectors": {
               "ifNames": ["(?<ethIfNames>.*)"]
             }
           }
+          {{- end }}
         ]
       }
     image: k8s-rdma-shared-dev-plugin

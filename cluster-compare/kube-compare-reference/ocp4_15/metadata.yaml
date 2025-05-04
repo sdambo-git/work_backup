@@ -1,12 +1,12 @@
 # MODIFIED VERSION COMPATIBILITY
 # ------------------------------
-# This reference design was originally created specifically for OpenShift 4.16.
+# This reference design was originally created specifically for OpenShift 4.15.
 # The version-check component has been intentionally removed to allow deployment
 # across multiple OpenShift versions. Please be aware that:
 #
-# 1. Some components may behave differently on versions other than 4.16
-# 2. Documentation links still reference version 4.16 specifications
-# 3. Testing has primarily been conducted on version 4.16
+# 1. Some components may behave differently on versions other than 4.15
+# 2. Documentation links still reference version 4.15 specifications
+# 3. Testing has primarily been conducted on version 4.15
 #
 # If you encounter issues, consider checking version-specific requirements
 # for the components referenced in this file.
@@ -16,7 +16,7 @@ parts:
   - name: version-check
     description: |-
       A mismatch here means you may be using the wrong reference.
-      This reference was designed for OpenShift 4.16.
+      This reference was designed for OpenShift 4.15.
     components:
       - name: version-check
         allOf:
