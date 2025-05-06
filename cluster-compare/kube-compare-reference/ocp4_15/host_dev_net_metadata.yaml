@@ -86,20 +86,12 @@ parts:
           - path: required/network-operator/NetworkSubscription.yaml
             config:
               ignore-unspecified-fields: true
-      - name: Network operator RDMA
-        anyOf:
-          - path: required/network-operator/network-sharedrdma-nic-cluster-policy.yaml
+      - name: Host Device Network
+        allOf:
+          - path: required/host-device/hostdev-network.yaml
+          - path: required/host-device/network-hostdev-nic-cluster-policy.yaml
             config:
               ignore-unspecified-fields: true
-              perField:
-              - pathToKey: spec.rdmaSharedDevicePlugin.config
-                inlineDiffFunc: capturegroups
-          - path: required/network-operator/macvlan-network.yaml
-            config:
-              ignore-unspecified-fields: true
-              perField:
-              - pathToKey: spec.ipam
-                inlineDiffFunc: capturegroups
   - name: optional-network-interface
     description: |-
       optional network interfaces

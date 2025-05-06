@@ -1,0 +1,26 @@
+apiVersion: mellanox.com/v1alpha1
+kind: HostDeviceNetwork
+metadata:
+  name: {{ .Values.network.name | default "hostdev-net" }}
+spec:
+  networkNamespace: {{ .Values.network.namespace | default "default" }}
+  resourceName: {{ .Values.network.resourceName | default "hostdev" }}
+  ipam: |
+    {
+      "type": "whereabouts",
+      "range": {{ .Values.network.ipRange | default "192.168.3.225/28" | quote }},
+      "exclude": [
+    {{- if .Values.network.excludeIPs }}
+    {{- range $index, $ip := .Values.network.excludeIPs }}
+    {{- if ne $index 0 }}
+       {{ $ip | quote }}
+    {{- else }}
+       {{ $ip | quote }}
+    {{- end }}
+    {{- end }}
+    {{- else }}
+       "192.168.3.229/30",
+       "192.168.3.236/32"
+    {{- end }}
+      ]
+    }

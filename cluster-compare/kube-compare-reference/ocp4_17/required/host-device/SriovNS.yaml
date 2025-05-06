@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-sriov-network-operator
+  {{- if and .metadata .metadata.annotations }}
+  annotations:
+    {{- range $key, $value := .metadata.annotations }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+  {{- end }}

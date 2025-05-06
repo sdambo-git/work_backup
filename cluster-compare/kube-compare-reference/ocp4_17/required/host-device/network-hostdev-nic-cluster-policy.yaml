@@ -1,0 +1,50 @@
+apiVersion: mellanox.com/v1alpha1
+kind: NicClusterPolicy
+metadata:
+  name: {{ .Values.policy.name | default "nic-cluster-policy" }}
+spec:
+  ofedDriver:
+    image: {{ .Values.ofedDriver.image | default "doca-driver" }}
+    repository: {{ .Values.ofedDriver.repository | default "nvcr.io/nvidia/mellanox" }}
+    version: {{ .Values.ofedDriver.version | default "24.10-0.7.0.0-0" }}
+    startupProbe:
+      initialDelaySeconds: {{ .Values.ofedDriver.startupProbe.initialDelaySeconds | default 10 }}
+      periodSeconds: {{ .Values.ofedDriver.startupProbe.periodSeconds | default 20 }}
+    livenessProbe:
+      initialDelaySeconds: {{ .Values.ofedDriver.livenessProbe.initialDelaySeconds | default 30 }}
+      periodSeconds: {{ .Values.ofedDriver.livenessProbe.periodSeconds | default 30 }}
+    readinessProbe:
+      initialDelaySeconds: {{ .Values.ofedDriver.readinessProbe.initialDelaySeconds | default 10 }}
+      periodSeconds: {{ .Values.ofedDriver.readinessProbe.periodSeconds | default 30 }}
+    env:
+    {{- with .Values.ofedDriver.env }}
+    {{- toYaml . | nindent 4 }}
+    {{- else }}
+    - name: UNLOAD_STORAGE_MODULES
+      value: "true"
+    - name: RESTORE_DRIVER_ON_POD_TERMINATION
+      value: "true"
+    - name: CREATE_IFNAMES_UDEV
+      value: "true"
+    {{- end }}
+  sriovDevicePlugin:
+      image: {{ .Values.sriovDevicePlugin.image | default "sriov-network-device-plugin" }}
+      repository: {{ .Values.sriovDevicePlugin.repository | default "ghcr.io/k8snetworkplumbingwg" }}
+      version: {{ .Values.sriovDevicePlugin.version | default "v3.7.0" }}
+      config: |
+        {{- if .Values.sriovDevicePlugin.config }}
+        {{ .Values.sriovDevicePlugin.config | nindent 8 }}
+        {{- else }}
+        {
+          "resourceList": [
+              {
+                  "resourcePrefix": "nvidia.com",
+                  "resourceName": "hostdev",
+                  "selectors": {
+                      "vendors": ["15b3"],
+                      "isRdma": true
+                  }
+              }
+          ]
+        }
+        {{- end }}
